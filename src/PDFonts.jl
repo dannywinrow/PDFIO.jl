@@ -128,16 +128,15 @@ function merge_encoding!(fum::Dict{UInt8, Char},
         if v isa CosInt
             cid = UInt8(get(v))
         else
-            m = match(r"^uni[0-9A-F]+$",String(v))
-            if isnothing(m)
-                d[cid] = v
+            m = match(r"^uni?([0-9A-F]{4})(?:\..+)?$|^u?([0-9A-F]{4-6})(?:\..+)?$",String(v))
+            if !isnothing(m)
+                unival = parse(UInt32,m.captures[1]; base=16)
+                ch = (0x0000 ≤ unival ≤ 0xD7ff || 0xE000 ≤ unival ≤ 0x10FFFF) ? Char(unival) : nothing
+            end
+            if !isnothing(ch)
+                fum[cid] = ch
             else
-                i = parse(Int,String(v)[4:end]; base=16)
-                if i in keys(fum)
-                    fum[cid] = fum[i]
-                else
-                    d[cid] = v
-                end
+                d[cid] = v
             end
             cid += 1
         end
